@@ -1,5 +1,7 @@
 package main
 
+import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import spring.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -7,8 +9,13 @@ import java.io.InputStreamReader
 class MainAssembler {
     private companion object {
         val assembler = Assembler()
+        lateinit var ctx: ApplicationContext
+        lateinit var memberDao: MemberDao
 
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            ctx = AnnotationConfigApplicationContext(AppCtx().javaClass)
+            this.memberDao = ctx.getBean("memberDao", MemberDao().javaClass)
             val reader = BufferedReader(InputStreamReader(System.`in`))
             while (true) {
                 println("명령어를 입력하세요")
@@ -34,8 +41,7 @@ class MainAssembler {
                 printHelp()
                 return
             }
-
-            val regSvc = assembler.getRegSvc()
+            val regSvc = ctx.getBean("memberRegSvc", MemberRegisterService(this.memberDao).javaClass)
             val req = RegisterRequest(email = arg[1], name = arg[2], password = arg[3], confirmPassword = arg[4])
 
             if (!req.isPasswordEqualToConfirmPassword()) {
@@ -57,7 +63,7 @@ class MainAssembler {
                 printHelp()
                 return
             }
-            val changePwdSvc = assembler.getPwdSvc()
+            val changePwdSvc = ctx.getBean("changePwdSvc", ChangePasswordService(this.memberDao).javaClass)
             try {
                 changePwdSvc.changePassword(arg[1], arg[2], arg[3])
                 println("성공적으로 변경하였습니다.")
